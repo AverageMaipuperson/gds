@@ -37,7 +37,8 @@ if exist "!STATE_FILE!" (
         exit /b 0
     )
 )
-python "compile.py" "%~2"
+for %%G in ("%~dp0..") do set "PARENT=%%~fG"
+python "%PARENT%\gds\compile.py" "%~2"
 if %errorlevel% equ 0 (
     echo !CURRENT_MOD!>"!STATE_FILE!"
 )
