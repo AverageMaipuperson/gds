@@ -14,13 +14,16 @@ bool test_init_H(CCLayer* self, int hello, std::string string) {
     auto win_size = CCDirector::sharedDirector()->getWinSize();
     auto myint = 2 + 2;
     auto javavm = cocos2d::JniHelper::getJavaVM();
+    CocosDenshion::SimpleAudioEngine::sharedEngine()->stopBackgroundMusic();
+    CocosDenshion::SimpleAudioEngine::sharedEngine()->playBackgroundMusic("123.mp3", true);
+    CocosDenshion::SimpleAudioEngine::sharedEngine()->playBackgroundMusic("123.mp3");
     auto sprite = CCSprite::create("sprite.png");
     auto sprite2 = CCSprite::createWithSpriteFrameName("sprite2.png");
     button->addChild(sprite);
     button->setPosition(ccp(CCDirector::sharedDirector()->getWinSize().width / 2, 100));
     button->alignItemsHorizontally(DEFAULT_PADDING);
     self->addChild(button);
-    auto val = MEMBER_BY_OFFSET(int, self, 0x130);
+    auto val = MEMBER_BY_OFFSET(void*, self, 0x130);
     return true;
 }
 
