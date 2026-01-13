@@ -1,0 +1,28 @@
+// Hello! This is the testing file made for developing GDS.
+// You can use it as a placeholder to develop your own GDS projects!
+// The decompiled file is test.cpp
+
+gds {
+define DEFAULT_PADDING 10
+
+$test_init(gds.layer self, gds.int hello, gds.string string) {
+    button = gds.createMenu()
+    win_size = gds.win_size
+    myint = 2 + 2
+    javavm = gds.getJavaVM()
+    sprite = gds.createSprite("sprite.png")
+    sprite2 = gds.spriteWithFrameName("sprite2.png")
+    gds.addChild(button, sprite)
+    button.position = gds.point(gds.win_size.width / 2, 100)
+    button.alignment = "horizontal:DEFAULT_PADDING" // unconsistent syntax
+    gds.addChild(self, button)
+    val = <gds.int>self.memberByOffset(0x130) // unconsistent syntax here, might change sooner or later
+    return true
+}
+
+$onLoad(gds.javavm, gds.void) {
+gds.hook("test", $test_init, true) // third parameter means wherever to call the trampoline or not
+gds.patch(0x12345, "00 BF")
+gds.patch(0x8478, "12 45")
+}
+}
