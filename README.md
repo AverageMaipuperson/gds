@@ -1,3 +1,7 @@
+**WARNING:** This project is on its early stages, i would appreciate any feedback or bug reports!
+
+# GDS
+
 GDS is a programming tool made for GD modding in 1.0-1.6, it's entire purpose is to make the process of coding and setting up the developing enviroment simpler. Includes compilation from GDS to C++.
 ## Requirements:
 - Latest release of python.
