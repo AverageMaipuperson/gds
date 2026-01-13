@@ -171,8 +171,8 @@ class SemanticAnalyzer:
     def __init__(self, ast):
         self.ast = ast
         self.symbol_table = set()
-        self.valid_types = {'gds.void', 'gds.bool', 'gds.int', 'gds.char_ptr', 'gds.string', 'gds.layer', 'gds.win_size', 'gds.javavm', 'bool'}
-        self.keywords = {'return', 'true', 'false', 'gds', 'self', 'window', 'bool', 'string', 'win_size', 'width', 'height', 'x', 'y'}
+        self.valid_types = {'gds.void', 'gds.bool', 'gds.int', 'gds.char_ptr', 'gds.string', 'gds.layer', 'gds.win_size', 'gds.javavm', 'bool', 'gds.voidptr'}
+        self.keywords = {'return', 'true', 'false', 'gds', 'self', 'window', 'bool', 'string', 'win_size', 'width', 'height', 'x', 'y', 'voidptr'}
         self.function_registry = {
             'gds.spriteWithFrameName': 1,
             'gds.createSprite': 1,
@@ -183,6 +183,8 @@ class SemanticAnalyzer:
             'memberByOffset': 1,
             'gds.patch': 2,
             'gds.getJavaVM': 0,
+            'gds.playMusic': 2,
+            'gds.stopAllMusic': 0
         }
 
         
@@ -341,11 +343,13 @@ def translate_statements(statements):
     patterns = [
         ('winsize', r'(\w+)\s*=\s*gds\s*\.\s*win_size'),
         ('get_javavm', r'(\w+)\s*=\s*gds\s*\.\s*getJavaVM()'),
+        ('stopAllMusic', r'gds\s*\.\s*stopAllMusic()'),
         ('sprite_frame', r'(\w+)\s*=\s*gds\s*\.\s*spriteWithFrameName\s*\(\s*"([^"]+)"\s*\)'),
         ('sprite_create', r'(\w+)\s*=\s*gds\s*\.\s*createSprite\s*\(\s*"([^"]+)"\s*\)'),
         ('anchor', r'(\w+)\s*\.\s*anchor\s*=\s*gds\s*\.\s*point\s*\(\s*([^,]+)\s*,\s*([^)]+)\s*\)'),
         ('position', r'(\w+)\s*\.\s*position\s*=\s*gds\s*\.\s*point\s*\(\s*([^,]+)\s*,\s*([^)]+)\s*\)'),
         ('add_child', r'gds\s*\.\s*addChild\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)'),
+        ('playMusic', r'gds\s*\.\s*playMusic\s*\(\s*(?:"|\')(?P<path>.*?)(?:"|\')\s*(?:,\s*(?P<loop>true|false))?\s*\)'),
         ('speed', r'gds\s*\.\s*speed\s*=\s*((\d+(\.\d*)?|\.\d+))[fF]?'),
         ('hook', r'gds\s*\.\s*hook\s*\(\s*"([^"]+)"\s*,\s*\$(\w+)\s*,\s*(\w+)\s*\)'),
         ('patch', r'gds\s*\.\s*patch\s*\(\s*([^,]+)\s*,\s*"([^"]+)"\s*\)'),
@@ -370,9 +374,12 @@ def translate_statements(statements):
             var_name = match.group('winsize').split('=')[0].strip()
             cpp_lines.append(f'    auto {var_name} = CCDirector::sharedDirector()->getWinSize();')
 
-        if kind == 'get_javavm':
+        elif kind == 'get_javavm':
             var_name = match.group('get_javavm').split('=')[0].strip()
             cpp_lines.append(f'    auto {var_name} = cocos2d::JniHelper::getJavaVM();')
+
+        elif kind == 'stopAllMusic':
+            cpp_lines.append(f'    gds.stopAllMusic()')
         
         elif kind == 'sprite_frame':
             m = re.search(r'(\w+)\s*=\s*gds\s*\.\s*spriteWithFrameName\s*\(\s*"([^"]+)"\s*\)', match.group('sprite_frame'))
@@ -410,6 +417,13 @@ def translate_statements(statements):
         elif kind == 'add_child':
             m = re.search(r'gds\s*\.\s*addChild\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)', match.group('add_child'))
             cpp_lines.append(f"    {m.group(1)}->addChild({m.group(2)});")
+
+        elif kind == 'playMusic':
+            m = re.search(r'gds\s*\.\s*playMusic\s*\(\s*(?:"|\')(?P<path>.*?)(?:"|\')\s*(?:,\s*(?P<loop>true|false))?\s*\)', match.group('playMusic'))
+            if re.search(f"(true|false)", m.group(0)) == None:
+                cpp_lines.append(f"    CocosDenshion::SimpleAudioEngine::sharedEngine()->playBackgroundMusic({re.search(f"\"(.*?)\"", m.group(0)).group(0)});")
+            else:
+                cpp_lines.append(f"    CocosDenshion::SimpleAudioEngine::sharedEngine()->playBackgroundMusic({re.search(f"\"(.*?)\"", m.group(0)).group(0)}, {re.search(f"(true|false)", m.group(0)).group(0)});")
 
         elif kind == 'speed':
     
@@ -542,6 +556,7 @@ print("Generating .cpp file...")
 code = generate_cpp(ast)
 code = code.replace("gds.win_size", "CCDirector::sharedDirector()->getWinSize()")
 code = code.replace("gds.getJavaVM()", "cocos2d::JniHelper::getJavaVM()")
+code = code.replace("gds.stopAllMusic()", "CocosDenshion::SimpleAudioEngine::sharedEngine()->stopBackgroundMusic();")
 from pathlib import Path
 gds_file = Path(directory)
 cpp_file = gds_file.with_suffix(".cpp")
